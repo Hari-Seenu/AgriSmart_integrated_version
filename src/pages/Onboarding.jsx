@@ -50,37 +50,42 @@ export default function Onboarding() {
     return localName.includes(searchVal);
   });
 
-  // Dynamic Google Maps Script Loader
+  // Start pre-loading Google Maps script immediately on component mount (Step 1)
   useEffect(() => {
-    if (step === 2) {
-      const loadGoogleMaps = () => {
-        if (window.google && window.google.maps) {
-          initializeMap();
-          return;
-        }
-        const existingScript = document.getElementById('google-maps-script');
-        if (existingScript) {
-          initializeMap();
-          return;
-        }
+    const loadGoogleMaps = () => {
+      if (window.google && window.google.maps) {
+        setMapLoaded(true);
+        return;
+      }
+      const existingScript = document.getElementById('google-maps-script');
+      if (existingScript) {
+        existingScript.onload = () => setMapLoaded(true);
+        return;
+      }
 
-        const script = document.createElement('script');
-        script.id = 'google-maps-script';
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey || ''}&libraries=places`;
-        script.async = true;
-        script.defer = true;
-        script.onload = () => {
-          initializeMap();
-        };
-        script.onerror = () => {
-          setMapError(t('onboarding.maps.load_error') || 'Failed to load Google Maps script. Displaying offline map.');
-        };
-        document.head.appendChild(script);
+      const script = document.createElement('script');
+      script.id = 'google-maps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${googleMapsApiKey || ''}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        setMapLoaded(true);
       };
+      script.onerror = () => {
+        setMapError(t('onboarding.maps.load_error') || 'Failed to load Google Maps script.');
+      };
+      document.head.appendChild(script);
+    };
 
-      loadGoogleMaps();
+    loadGoogleMaps();
+  }, []);
+
+  // Initialize map when entering Step 2
+  useEffect(() => {
+    if (step === 2 && mapLoaded) {
+      initializeMap();
     }
-  }, [step]);
+  }, [step, mapLoaded]);
 
   const initializeMap = () => {
     if (!mapRef.current) return;
