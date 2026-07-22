@@ -254,7 +254,14 @@
     "day_thu": "வியாழன்",
     "day_fri": "வெள்ளி",
     "day_sat": "சனி",
-    "day_sun": "ஞாயிறு"
+    "day_sun": "ஞாயிறு",
+    "action_title": "தினசரி விவசாய திட்டமிடுபவர்",
+    "action_advice": "அன்றைய நாள் செய்ய வேண்டியவை",
+    "irrigation": "நீர்ப்பாசன நடவடிக்கை",
+    "fertilization": "உரமிடுதல் நிலை",
+    "soil_profile": "மண் வள விவரம்",
+    "soil_type_label": "மாவட்ட மண் வகை",
+    "today_badge": "இன்று"
   },
   "value_added": {
     "title": "மதிப்பு கூட்டப்பட்ட தயாரிப்புகள்",

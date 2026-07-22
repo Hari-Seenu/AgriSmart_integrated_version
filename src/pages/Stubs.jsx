@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { useAppState } from '../store.jsx';
+import { districtsData } from '../data/districtsData.js';
 import {
   ArrowLeft,
   CloudRain,
@@ -11,15 +12,26 @@ import {
   MessageSquare,
   Building2,
   CheckCircle,
-  Award
+  Award,
+  Cloud,
+  CloudLightning,
+  Wind,
+  CloudSun,
+  Info,
+  Calendar,
+  Sprout
 } from 'lucide-react';
 
 // 1. Weather Recommendation Stub
 export function WeatherStub() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { selectedCrop, selectedDistrict } = useAppState();
   const cropName = t(`crops.${selectedCrop}`);
   const districtName = t(`districts.${selectedDistrict}`);
+
+  // Fetch district info (soil profile)
+  const districtIntel = districtsData[selectedDistrict] || districtsData['thiruvarur'];
+  const soilType = districtIntel.soil;
 
   const advisories = {
     rice: 'high humidity (>85%) and Samba season rains increase BPH (Brown Plant Hopper) vulnerability. Keep water levels at 2cm and spray Neem oil (3%) immediately.',
@@ -30,12 +42,145 @@ export function WeatherStub() {
   };
 
   const warning = advisories[selectedCrop] || advisories['rice'];
-  const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+
+  // Helper to determine status badges
+  const getActionBadges = (weatherType, isSandy) => {
+    switch (weatherType) {
+      case 'rainy':
+      case 'heavy_rain':
+        return {
+          irrigation: { text: i18n.language === 'ta' ? '🚫 நீர் பாய்ச்ச வேண்டாம்' : '🚫 Do Not Irrigate', color: 'text-red-700 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50' },
+          fertilization: { text: i18n.language === 'ta' ? '🚫 உரம் இட வேண்டாம்' : '🚫 Do Not Fertilize', color: 'text-red-700 bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50' }
+        };
+      case 'sunny':
+      case 'dry_heat':
+        return {
+          irrigation: {
+            text: isSandy 
+              ? (i18n.language === 'ta' ? '💧 ஆழமான நீர்ப்பாசனம்' : '💧 Deep Irrigation')
+              : (i18n.language === 'ta' ? '💧 சாதாரண நீர்ப்பாசனம்' : '💧 Normal Irrigation'),
+            color: 'text-blue-700 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50'
+          },
+          fertilization: { text: i18n.language === 'ta' ? '✅ உரம் இடலாம்' : '✅ Safe to Fertilize', color: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50' }
+        };
+      case 'cloudy':
+        return {
+          irrigation: { text: i18n.language === 'ta' ? '🚿 நீரைக் குறைக்கவும்' : '🚿 Reduce Watering', color: 'text-amber-700 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50' },
+          fertilization: { text: i18n.language === 'ta' ? '✅ உரம் இடலாம்' : '✅ Safe to Fertilize', color: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50' }
+        };
+      case 'windy':
+        return {
+          irrigation: { text: i18n.language === 'ta' ? '💧 வழக்கமான நீர்ப்பாசனம்' : '💧 Standard Irrigation', color: 'text-blue-700 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50' },
+          fertilization: { text: i18n.language === 'ta' ? '⚠️ தெளிப்பதைத் தவிர்க்கவும்' : '⚠️ Delay Foliar Spray', color: 'text-amber-700 bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50' }
+        };
+      case 'overcast':
+      default:
+        return {
+          irrigation: { text: i18n.language === 'ta' ? '💧 வழக்கமான நீர்ப்பாசனம்' : '💧 Standard Irrigation', color: 'text-blue-700 bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/50' },
+          fertilization: { text: i18n.language === 'ta' ? '✅ உரம் இடலாம்' : '✅ Safe to Fertilize', color: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50' }
+        };
+    }
+  };
+
+  // Generate localized dates
+  const generateDates = () => {
+    const dates = [];
+    const today = new Date();
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const options = { weekday: 'short', month: 'short', day: 'numeric' };
+      const formattedDate = new Intl.DateTimeFormat(i18n.language === 'ta' ? 'ta-IN' : 'en-US', options).format(date);
+      dates.push({
+        formatted: formattedDate,
+        isToday: i === 0
+      });
+    }
+    return dates;
+  };
+
+  const dates = generateDates();
+
+  // Soil info logic
+  const lowerSoil = (soilType || '').toLowerCase();
+  const isClayey = lowerSoil.includes('clay') || lowerSoil.includes('alluvial') || lowerSoil.includes('black');
+  const isSandy = lowerSoil.includes('sand') || lowerSoil.includes('laterite') || lowerSoil.includes('gravel');
+
+  // Hardcoded 7-day weather profile sequence
+  const weatherSequence = [
+    { type: 'rainy', temp: '25°C', icon: CloudRain, label: i18n.language === 'ta' ? 'மிதமான மழை' : 'Moderate Rain', color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/10' },
+    { type: 'sunny', temp: '34°C', icon: Sun, label: i18n.language === 'ta' ? 'வெப்பமான வெயில்' : 'Sunny & Clear', color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/10' },
+    { type: 'cloudy', temp: '28°C', icon: Cloud, label: i18n.language === 'ta' ? 'மேகமூட்டம்' : 'Overcast / Cloudy', color: 'text-slate-500 bg-slate-50 dark:bg-slate-950/10' },
+    { type: 'windy', temp: '29°C', icon: Wind, label: i18n.language === 'ta' ? 'பலத்த காற்று' : 'High Winds', color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/10' },
+    { type: 'heavy_rain', temp: '22°C', icon: CloudLightning, label: i18n.language === 'ta' ? 'கனமழை' : 'Heavy Thunderstorms', color: 'text-red-500 bg-red-50 dark:bg-red-950/10' },
+    { type: 'dry_heat', temp: '36°C', icon: Sun, label: i18n.language === 'ta' ? 'அதிவெப்பம் & வறட்சி' : 'Extreme Heat & Dry', color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/10' },
+    { type: 'overcast', temp: '27°C', icon: CloudSun, label: i18n.language === 'ta' ? 'சாதகமான வானிலை' : 'Partly Cloudy', color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/10' }
+  ];
+
+  // Map sequences with dynamic advice
+  const calendarData = dates.map((d, index) => {
+    const weather = weatherSequence[index];
+    const badges = getActionBadges(weather.type, isSandy);
+    
+    let advice = '';
+    if (weather.type === 'rainy') {
+      advice = i18n.language === 'ta'
+        ? `மழை பெய்யக்கூடும் என்பதால் நீர்ப்பாசனத்தையும் உரமிடுவதையும் தற்காலிகமாக நிறுத்தவும். ${isClayey ? 'மண் களிமண் வகையாக இருப்பதால் வயலில் தண்ணீர் தேங்கி வேர்கள் அழுக வாய்ப்புள்ளது. வடிகால் வாய்க்கால்களை உடனே திறந்து விடவும்.' : 'வடிகால் வாய்க்கால்களைச் சரிபார்த்துக் கொள்ளவும்.'}`
+        : `Rain expected. Hold irrigation and fertilizing. ${isClayey ? 'Since your soil is clayey, water retention is high. Open drainage channels now to prevent root drowning.' : 'Verify field drainage is clear.'}`;
+    } else if (weather.type === 'sunny') {
+      advice = i18n.language === 'ta'
+        ? (isSandy 
+            ? 'மணல் பாங்கான மண்ணில் நீர் விரைவில் வற்றும். அதிகாலை அல்லது மாலை வேளையில் ஆழமாக நீர் பாய்ச்சவும். உரமிட உகந்த நாள்.'
+            : isClayey
+              ? 'களிமண் ஈரப்பதத்தை நன்கு தக்கவைக்கும் என்பதால் மிதமான நீர் போதுமானது. திட்டமிட்டபடி உரமிடலாம்.'
+              : 'வழக்கமான நீர்ப்பாசனம் செய்யவும். பயிர்களுக்கு தேவையான திட்டமிட்ட உரங்களை தடையின்றி இடலாம்.')
+        : (isSandy 
+            ? 'Sandy soil loses moisture rapidly under hot sun. Irrigate deeply in early morning or evening. Safe to apply fertilizers.'
+            : isClayey
+              ? 'Clay soil retains moisture well; light to moderate irrigation is sufficient. Safe to apply fertilizers.'
+              : 'Safe to perform planned fertilizations. Irrigate crops normally.');
+    } else if (weather.type === 'cloudy') {
+      advice = i18n.language === 'ta'
+        ? `மேகமூட்டத்தால் ஈரப்பதம் அதிகரித்து பூஞ்சை அல்லது பூச்சி தாக்குதல் வர வாய்ப்புள்ளது. நீர்ப்பாசனத்தை சற்று குறைக்கவும், இலைகளில் பூச்சிகள் தென்படுகிறதா எனக் கண்காணிக்கவும்.`
+        : `Overcast skies increase humidity and risk of pest or fungal infection. Reduce watering slightly and inspect leaves regularly.`;
+    } else if (weather.type === 'windy') {
+      advice = i18n.language === 'ta'
+        ? (['cashew', 'coconut', 'sugarcane'].includes(selectedCrop)
+            ? `பலத்த காற்று வீசக்கூடும். முந்திரி ஒட்டுகளைக் கட்டவும், கரும்புகளை இணைத்துக் கட்டவும், சேதத்தைத் தடுக்க முதிர்ந்த தேங்காய்களை அறுவடை செய்யவும். திரவ மருந்து தெளிப்பதைத் தவிர்க்கவும்.`
+            : `அதிக காற்று வேகம் காரணமாக இலைவழித் தெளிப்பு (Foliar spray) செய்ய வேண்டாம். மண் எளிதில் உலரக்கூடும் என்பதால் ஈரப்பதத்தைக் கண்காணிக்கவும்.`)
+        : (['cashew', 'coconut', 'sugarcane'].includes(selectedCrop)
+            ? `High wind warning. Secure cashew grafts, prop sugarcane stalks together to avoid lodging, or harvest ripe coconuts. Delay any foliar sprays.`
+            : `Strong winds will cause spray drift. Postpone all foliar/pesticide sprays. Evaporation is slightly higher; monitor moisture.`);
+    } else if (weather.type === 'heavy_rain') {
+      advice = i18n.language === 'ta'
+        ? `கனமழை பெய்யக்கூடும். நீர்ப்பாசனம் மற்றும் உரமிடுவதை முற்றிலும் தவிர்க்கவும். வயலில் தேங்கும் நீரை உடனே வெளியேற்ற வடிகால் வாய்க்கால்களைத் தயார் நிலையில் வைக்கவும்.`
+        : `Torrential rains expected. Absolutely zero watering or fertilization. Clear all outlet channels immediately to drain excess run-off.`;
+    } else if (weather.type === 'dry_heat') {
+      advice = i18n.language === 'ta'
+        ? (isSandy 
+            ? `கடும் வெப்பத்தால் மண்ணின் ஈரப்பதம் மிக வேகமாக வறளும். தென்னை நார் கழிவுகள் அல்லது உலர் இலைகளைக் கொண்டு வேர் பகுதியை மூடி (Mulch) ஈரப்பதம் காக்கவும்.`
+            : `வறண்ட வெப்பக் காற்றால் பயிர்கள் வாடாமல் இருக்க, காலை அல்லது மாலை வேளையில் நீர்ப்பாசனத்தின் அளவை 20% அதிகரிக்கவும்.`)
+        : (isSandy 
+            ? `Severe heat. Sandy soils dry out instantly. Apply organic mulch (coir pith, dried leaves) around crop root zones to lock in moisture.`
+            : `Increase irrigation frequency by 20% to mitigate transpiration stress during peak noon hours.`);
+    } else {
+      advice = i18n.language === 'ta'
+        ? `பயிர் வளர்ச்சிக்கு உகந்த மிதமான சூழல். பரிந்துரைக்கப்பட்ட NPK உரமிடுதல் மற்றும் இலைவழி ஊட்டச்சத்துக்களை அளிக்க இதுவே சிறந்த நேரம்.`
+        : `Mild weather, excellent for crop growth. Ideal window to perform scheduled NPK fertilizer dosages and micro-nutrient foliar spray.`;
+    }
+
+    return {
+      ...d,
+      weather,
+      badges,
+      advice
+    };
+  });
 
   return (
     <div className="space-y-6 text-left">
       <div className="flex items-center gap-3 border-b border-brand-borderLight dark:border-brand-borderDark pb-6">
-        <Link to="/dashboard" className="p-2 border border-brand-borderLight dark:border-brand-borderDark bg-white dark:bg-brand-darkSurface rounded-xl premium-shadow">
+        <Link to="/dashboard" className="p-2 border border-brand-borderLight dark:border-brand-borderDark bg-white dark:bg-brand-darkSurface rounded-xl premium-shadow hover:opacity-85 transition-all">
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
@@ -59,21 +204,90 @@ export function WeatherStub() {
         </p>
       </div>
 
-      {/* 7-Day Forecast Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
-        {days.map((day, idx) => (
-          <div key={day} className="bg-white dark:bg-brand-darkSurface border border-brand-borderLight dark:border-brand-borderDark p-4 rounded-xl text-center premium-shadow">
-            <span className="text-xs font-bold text-brand-textSecondaryLight dark:text-brand-textSecondaryDark block">
-              {t(`weather.day_${day}`)}
-            </span>
-            <div className="my-3 flex justify-center text-brand-gold">
-              {idx % 3 === 0 ? <CloudRain className="w-6 h-6 text-blue-500" /> : <Sun className="w-6 h-6 text-brand-gold" />}
-            </div>
-            <span className="text-sm font-extrabold block text-brand-primary dark:text-[#EDEFE9]">
-              {idx % 3 === 0 ? '26°C' : '32°C'}
-            </span>
+      {/* Soil Profile info card */}
+      <div className="bg-[#FAF8F5] dark:bg-[#15251C] border border-brand-borderLight dark:border-brand-borderDark p-5 rounded-2xl premium-shadow flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex gap-3">
+          <Sprout className="w-8 h-8 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-brand-textSecondaryLight/80 dark:text-brand-textSecondaryDark/80">
+              {t('weather.soil_profile')}
+            </h3>
+            <p className="text-sm font-bold text-brand-primary dark:text-[#EDEFE9] mt-0.5">
+              {t('weather.soil_type_label')}: <span className="text-emerald-700 dark:text-emerald-400">{soilType}</span>
+            </p>
+            <p className="text-xs text-brand-textSecondaryLight dark:text-brand-textSecondaryDark mt-1">
+              {isClayey 
+                ? (i18n.language === 'ta' ? 'களிமண் அதிக நீர் தேக்கத் திறன் கொண்டது, வடிகால் வசதி தேவை.' : 'Clayey soil has high water retention. Requires robust drainage systems.')
+                : isSandy 
+                  ? (i18n.language === 'ta' ? 'மணல் மண் விரைவாக வடிகிறது. அடிக்கடி நீர்ப்பாசனம் மற்றும் மல்ச்சிங் தேவை.' : 'Sandy soil drains quickly. Requires frequent watering & mulching.')
+                  : (i18n.language === 'ta' ? 'நடுத்தர வடிகால் மற்றும் ஈரப்பதம் கொண்ட மண் வகை.' : 'Loamy/medium soil with balanced water retention and drainage.')}
+            </p>
           </div>
-        ))}
+        </div>
+      </div>
+
+      {/* 7-Day Interactive Forecast Calendar */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-5 h-5 text-brand-primary dark:text-[#EDEFE9]" />
+          <h2 className="text-base font-bold text-brand-primary dark:text-[#EDEFE9]">{t('weather.action_title')}</h2>
+        </div>
+
+        <div className="space-y-3.5">
+          {calendarData.map((item, idx) => {
+            const WeatherIcon = item.weather.icon;
+            return (
+              <div 
+                key={idx} 
+                className={`bg-white dark:bg-brand-darkSurface border ${item.isToday ? 'border-brand-primary/60 dark:border-brand-gold/60 ring-1 ring-brand-primary/10 dark:ring-brand-gold/10' : 'border-brand-borderLight dark:border-brand-borderDark'} p-5 rounded-2xl premium-shadow flex flex-col md:flex-row gap-5 items-start md:items-center`}
+              >
+                {/* Date / Day Column */}
+                <div className="w-full md:w-[160px] shrink-0 flex md:flex-col justify-between md:justify-center items-center md:items-start border-b md:border-b-0 md:border-r border-brand-borderLight dark:border-brand-borderDark pb-3 md:pb-0 md:pr-4">
+                  <div className="flex items-center gap-2 md:gap-0 md:flex-col md:items-start">
+                    <span className="text-sm font-extrabold text-brand-primary dark:text-[#EDEFE9]">
+                      {item.formatted}
+                    </span>
+                    {item.isToday && (
+                      <span className="bg-brand-primary dark:bg-brand-gold text-white dark:text-brand-darkBg text-[9px] font-black tracking-widest px-2 py-0.5 rounded-md mt-1 block">
+                        {t('weather.today_badge')}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 md:mt-2 text-brand-textSecondaryLight dark:text-brand-textSecondaryDark">
+                    <WeatherIcon className={`w-5 h-5 ${item.weather.color.split(' ')[0]}`} />
+                    <span className="text-xs font-bold">{item.weather.label}</span>
+                  </div>
+                </div>
+
+                {/* Weather details & recommendations */}
+                <div className="flex-1 space-y-3 w-full">
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs font-extrabold px-3 py-1 rounded-full border border-brand-borderLight dark:border-brand-borderDark bg-[#FAF8F5] dark:bg-brand-darkSurface text-brand-primary dark:text-[#EDEFE9] tabular-nums">
+                      🌡️ {item.weather.temp}
+                    </span>
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full border ${item.badges.irrigation.color}`}>
+                      {item.badges.irrigation.text}
+                    </span>
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full border ${item.badges.fertilization.color}`}>
+                      {item.badges.fertilization.text}
+                    </span>
+                  </div>
+
+                  {/* Dynamic farming advice box */}
+                  <div className="bg-brand-primary/[0.01] dark:bg-brand-primary/[0.02] border border-brand-borderLight/80 dark:border-brand-borderDark/80 p-3.5 rounded-xl">
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-brand-gold dark:text-brand-goldDark block mb-1">
+                      {t('weather.action_advice')}
+                    </span>
+                    <p className="text-xs leading-relaxed text-brand-textSecondaryLight dark:text-brand-textSecondaryDark font-medium">
+                      {item.advice}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

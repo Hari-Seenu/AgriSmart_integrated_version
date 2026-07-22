@@ -254,7 +254,14 @@
     "day_thu": "Thu",
     "day_fri": "Fri",
     "day_sat": "Sat",
-    "day_sun": "Sun"
+    "day_sun": "Sun",
+    "action_title": "Daily Farm Action Planner",
+    "action_advice": "What to do that day",
+    "irrigation": "Irrigation Action",
+    "fertilization": "Fertilization Status",
+    "soil_profile": "Soil Profile",
+    "soil_type_label": "District Soil Type",
+    "today_badge": "TODAY"
   },
   "value_added": {
     "title": "Value-Added Products Explorer",
