@@ -4,14 +4,22 @@ import { Link } from 'react-router-dom';
 import { useAppState } from '../store.jsx';
 import { ArrowLeft, Landmark, Store, LandmarkIcon, TrendingUp, Info } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend } from 'recharts';
+import { getMarketTrends } from '../services/api.js';
+import { Loader2 } from 'lucide-react';
 
 export default function MarketComparison() {
   const { t } = useTranslation();
   const { selectedCrop, selectedDistrict } = useAppState();
 
   const [weight, setWeight] = useState(10); // default 10 Quintals
+
+  const [aiReport, setAiReport] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+
   const cropName = t(`crops.${selectedCrop}`);
   const districtName = t(`districts.${selectedDistrict}`);
+
 
   // TNAU & market-verified base prices for channels per crop (₹ / Quintal)
   // Jasmine price maps to scent extraction scale (₹400-650/kg converted to Quintal)
@@ -130,6 +138,27 @@ export default function MarketComparison() {
     }
   };
 
+  // ADD THIS NEW FUNCTION RIGHT HERE
+  const handleGetAIReport = async () => {
+    try {
+      setAiLoading(true);   // show loading spinner on button
+      setAiError(null);     // clear old errors
+      setAiReport(null);    // clear old report
+
+      // call backend API
+      const data = await getMarketTrends(selectedCrop, selectedDistrict);
+
+      // save the report text to show on screen
+      setAiReport(data.report);
+
+    } catch (err) {
+      // if something goes wrong, show error message
+      setAiError('Failed to get AI market report. Check if backend is running.');
+    } finally {
+      setAiLoading(false);  // always hide spinner at end
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Module Navigation Header */}
@@ -154,7 +183,7 @@ export default function MarketComparison() {
 
       {/* Grid containing Comparative Table & Trend Graph */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Sales Channels Table (Span 2) */}
         <div className="lg:col-span-2 bg-white dark:bg-brand-darkSurface border border-brand-borderLight dark:border-brand-borderDark rounded-2xl p-6 premium-shadow space-y-6 text-left">
           <div className="flex items-center gap-2">
@@ -174,7 +203,7 @@ export default function MarketComparison() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-borderLight dark:divide-brand-borderDark">
-                
+
                 {/* Gov MSP row */}
                 <tr className="hover:bg-brand-primary/[0.01]">
                   <td className="py-4 pl-2 font-bold flex items-center gap-2 text-brand-primary dark:text-[#EDEFE9]">
@@ -289,7 +318,7 @@ export default function MarketComparison() {
             <span className="text-[10px] font-bold text-brand-textSecondaryLight dark:text-brand-textSecondaryDark uppercase block mb-3">
               Projected Earnings Comparison (₹)
             </span>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="border-l-2 border-emerald-500 pl-3">
                 <span className="text-[10px] text-brand-textSecondaryLight dark:text-brand-textSecondaryDark block">
@@ -322,7 +351,50 @@ export default function MarketComparison() {
         </div>
 
       </div>
+      <div className="bg-white dark:bg-brand-darkSurface border border-brand-borderLight dark:border-brand-borderDark rounded-2xl p-6 premium-shadow space-y-4 text-left">
 
+        <div>
+          <h2 className="text-base font-bold text-brand-primary dark:text-[#EDEFE9]">
+            Live AI Market Intelligence
+          </h2>
+          <p className="text-xs text-brand-textSecondaryLight dark:text-brand-textSecondaryDark mt-1">
+            Get real-time web search and AI analysis of current {cropName} prices in Tamil Nadu markets.
+          </p>
+        </div>
+
+        <button
+          onClick={handleGetAIReport}
+          disabled={aiLoading}
+          className="flex items-center gap-2 bg-brand-primary hover:bg-brand-primary/95 disabled:opacity-50 text-white dark:bg-brand-gold dark:text-brand-darkBg font-bold py-2.5 px-6 rounded-xl text-xs transition-all"
+        >
+          {aiLoading ? (
+            <>
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Fetching live market data...</span>
+            </>
+          ) : (
+            <span>Get Live AI Market Report</span>
+          )}
+        </button>
+
+        {aiError && (
+          <p className="text-xs text-red-600 dark:text-red-400 font-medium">
+            {aiError}
+          </p>
+        )}
+
+        {aiReport && (
+          <div className="bg-brand-primary/[0.02] dark:bg-brand-primary/[0.04] border border-brand-borderLight dark:border-brand-borderDark rounded-xl p-4">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-brand-primary dark:text-[#EDEFE9] block mb-2">
+              AI Market Analysis Report
+            </span>
+            <pre className="text-xs text-brand-textSecondaryLight dark:text-brand-textSecondaryDark whitespace-pre-wrap font-sans leading-relaxed">
+              {aiReport}
+            </pre>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }

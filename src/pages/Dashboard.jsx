@@ -18,7 +18,9 @@ import {
   Phone,
   CheckCircle,
   HelpCircle,
-  FileSpreadsheet
+  FileSpreadsheet,
+  FlaskConical,
+  Microscope
 } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ComposedChart, Line, Cell } from 'recharts';
 import { districtsData, agroClimaticZones } from '../data/districtsData.js';
@@ -112,12 +114,14 @@ export default function Dashboard() {
     { id: 'storage', path: '/storage', title: t('dashboard.modules.storage.title'), icon: Building, color: 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/20' },
     { id: 'schemes', path: '/schemes', title: t('dashboard.modules.schemes.title'), icon: UserCheck, color: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/20' },
     { id: 'officer', path: '/officer', title: t('dashboard.modules.officer.title'), icon: User, color: 'text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/20' },
-    { id: 'doctor', path: '/doctor', title: t('dashboard.modules.doctor.title'), icon: Stethoscope, color: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/20' }
+    { id: 'doctor', path: '/doctor', title: t('dashboard.modules.doctor.title'), icon: Stethoscope, color: 'text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-950/20' },
+    { id: 'soil-analysis', path: '/soil-analysis', title: 'AI Soil Analysis', icon: FlaskConical, color: 'text-lime-600 dark:text-lime-400 bg-lime-50 dark:bg-lime-950/20' },
+    { id: 'disease-detection', path: '/disease-detection', title: 'Disease Detection', icon: Microscope, color: 'text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/20' }
   ];
 
   return (
     <div className="space-y-8 text-left max-w-5xl mx-auto">
-      
+
       {/* 1. Large Warm Farmer Greeting Banner */}
       <div className="bg-[#FAF8F5] dark:bg-[#15251C] border border-brand-borderLight dark:border-brand-borderDark p-6 sm:p-8 rounded-2xl premium-shadow flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div className="space-y-2">
@@ -128,7 +132,7 @@ export default function Dashboard() {
             {t('common.language') === 'ta' ? `வணக்கம், ${userName}!` : `Vanakkam, ${userName}!`}
           </h1>
           <p className="text-sm text-brand-textSecondaryLight dark:text-brand-textSecondaryDark leading-relaxed">
-            {t('common.language') === 'ta' 
+            {t('common.language') === 'ta'
               ? `உங்கள் ${cropName} பயிரை வளர்ப்பதற்கான எளிய தினசரி விவசாய ஆலோசனைகள் தயார் நிலையில் உள்ளன.`
               : `Your personalized daily farm instructions for ${cropName} are ready below.`}
           </p>
@@ -148,7 +152,7 @@ export default function Dashboard() {
         <h2 className="text-xs font-bold uppercase tracking-wider text-brand-textSecondaryLight/80 dark:text-brand-textSecondaryDark/80">
           Command Terminal Modules
         </h2>
-        
+
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {modules.map((mod) => {
             const Icon = mod.icon;
@@ -186,7 +190,7 @@ export default function Dashboard() {
 
         {/* Big checklist bullet items */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-sm">
-          
+
           {/* Bullet 1: Growth Stage */}
           <div className="flex gap-3 bg-[#FAF8F5] dark:bg-[#1C2C22] p-4 rounded-xl border border-brand-borderLight dark:border-brand-borderDark">
             <Sprout className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
@@ -257,7 +261,7 @@ export default function Dashboard() {
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
+
           {/* Card 1: Fertilizer Dose */}
           <div className="bg-white dark:bg-brand-darkSurface border border-brand-borderLight dark:border-brand-borderDark p-6 rounded-2xl premium-shadow flex flex-col justify-between h-[180px]">
             <div>
